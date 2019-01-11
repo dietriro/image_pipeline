@@ -55,6 +55,7 @@ bool g_do_dynamic_scaling;
 int g_colormap;
 double g_min_image_value;
 double g_max_image_value;
+bool g_fullscreen;
 
 void reconfigureCb(image_view::ImageViewConfig &config, uint32_t level)
 {
@@ -98,7 +99,32 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
   }
   if (g_gui && !g_last_image.empty()) {
     const cv::Mat &image = g_last_image;
-    cv::imshow(g_window_name, image);
+
+    if (g_fullscreen) {
+        // Crop Image
+        int startX=40,startY=0,width=1200,height=720;
+        cv::Mat ROI(image, cv::Rect(startX,startY,width,height));
+        cv::Mat croppedImage;
+        ROI.copyTo(croppedImage);
+
+        // Rotate Image
+        int iImageHeight = croppedImage.rows / 2;
+        int iImageWidth = croppedImage.cols / 2;
+        int iAngle = 90;
+        cv::Mat matRotation = cv::getRotationMatrix2D( cv::Point(iImageWidth, iImageHeight), (iAngle - 180), 1 );
+
+        // Rotate the image
+        cv::Mat imgRotated;
+        cv::warpAffine( croppedImage, imgRotated, matRotation, croppedImage.size() );
+
+        // Show image
+        cv::imshow(g_window_name, imgRotated);
+    }
+    else {
+        // Show image
+        cv::imshow(g_window_name, image);
+    }
+
     cv::waitKey(3);
   }
   if (g_pub.getNumSubscribers() > 0) {
@@ -160,6 +186,12 @@ int main(int argc, char **argv)
     bool autosize;
     local_nh.param("autosize", autosize, false);
     cv::namedWindow(g_window_name, autosize ? (CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED) : 0);
+
+    local_nh.param("fullscreen", g_fullscreen, false);
+
+    if (g_fullscreen) {
+        cv::setWindowProperty(g_window_name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+    }
     cv::setMouseCallback(g_window_name, &mouseCb);
 
     if(autosize == false)
