@@ -107,18 +107,25 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
         cv::Mat croppedImage;
         ROI.copyTo(croppedImage);
 
-        // Rotate Image
-        int iImageHeight = croppedImage.rows / 2;
-        int iImageWidth = croppedImage.cols / 2;
-        int iAngle = 90;
-        cv::Mat matRotation = cv::getRotationMatrix2D( cv::Point(iImageWidth, iImageHeight), (iAngle - 180), 1 );
+        // rotate images by 90 degrees
+      	cv::Mat color_image_turned;
+    	cv::Mat rot_mat = cv::Mat::zeros(2,3,CV_64FC1);
 
-        // Rotate the image
-        cv::Mat imgRotated;
-        cv::warpAffine( croppedImage, imgRotated, matRotation, croppedImage.size() );
+		color_image_turned.create(croppedImage.cols, croppedImage.rows, croppedImage.type());
+		if (croppedImage.type() != CV_8UC3)
+		{
+			ROS_ERROR("ImageFlip::imageCallback: Error: The image format of the color image is not CV_8UC3.\n");
+			return;
+		}
+		for (int v = 0; v < color_image_turned.rows; v++)
+			for (int u = 0; u < color_image_turned.cols; u++)
+				color_image_turned.at<cv::Vec3b>(v,u) = croppedImage.at<cv::Vec3b>(croppedImage.rows-1-u,v);
+		rot_mat.at<double>(0,1) = -1.;
+		rot_mat.at<double>(0,2) = croppedImage.rows;
+		rot_mat.at<double>(1,0) = 1.;
 
         // Show image
-        cv::imshow(g_window_name, imgRotated);
+        cv::imshow(g_window_name, color_image_turned);
     }
     else {
         // Show image
