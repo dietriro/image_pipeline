@@ -102,7 +102,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
 
     if (g_fullscreen) {
         // Crop Image
-        int startX=40,startY=0,width=1200,height=720;
+        int startX=160,startY=0,width=960,height=720;
         cv::Mat ROI(image, cv::Rect(startX,startY,width,height));
         cv::Mat croppedImage;
         ROI.copyTo(croppedImage);
